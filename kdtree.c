@@ -242,7 +242,6 @@ static void knn_list_add(struct kdtree *tree, struct kdnode *node, double dist)
         if (log != NULL) {
                 log->node = node;
                 log->distance = dist;
-                log->prev = log->next = log;
                 struct knn_list *p = head->prev;
                 if (tree->knn_num == 0) {
                 } else if (tree->knn_num == 1) {
@@ -328,7 +327,7 @@ void kdtree_knn_dump(struct kdtree *tree)
                 putchar('(');
                 for (i = 0; i < tree->dim; i++) {
                         if (i == tree->dim - 1) {
-                                printf("%.2lf) Dist:%lf\n", p->node->coord[i], sqrt(p->distance));
+                                printf("%.2lf) Distance:%lf\n", p->node->coord[i], sqrt(p->distance));
                         } else {
                                 printf("%.2lf, ", p->node->coord[i]);
                         }
@@ -347,7 +346,7 @@ void kdtree_insert(struct kdtree *tree, double *coord)
 
 void kdtree_search_knn(struct kdtree *tree, double *target, int k)
 {
-        int level = 0, backtracking = 0;
+        int backtracking = 0;
         struct kdnode *node = tree->root;
         struct kdnode_backlog nbl, *p_nbl = NULL;
         struct kdnode_backlog *top, *bottom, nbl_stack[KDTREE_MAX_LEVEL];
@@ -395,7 +394,6 @@ void kdtree_search_knn(struct kdtree *tree, double *target, int k)
                                 nbl.next_sub_idx = KDTREE_RIGHT_INDEX;
                         }
                         nbl_push(&nbl, &top, &bottom);
-                        level++;
 
                         int r = node->r;
                         if (backtracking) {
@@ -425,7 +423,6 @@ void kdtree_search_knn(struct kdtree *tree, double *target, int k)
                                 break;
                         }
                         node = p_nbl->node;
-                        level--;
                 }
         }
 }

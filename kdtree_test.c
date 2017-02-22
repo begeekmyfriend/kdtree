@@ -10,7 +10,7 @@
 
 static inline double rd(void)
 {
-        return (double)rand() / RAND_MAX * 20.0 - 10.0;
+        return (double)rand() / RAND_MAX * 20 - 10;
 }
 
 int main(void)
