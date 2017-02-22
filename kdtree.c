@@ -233,28 +233,27 @@ static int coord_cmp(double *c1, double *c2, int dim)
         return ret;
 }
 
-static void knn_list_add(struct kdtree *tree, struct kdnode *node, double dist)
+static void knn_list_add(struct kdtree *tree, struct kdnode *node, double distance)
 {
         if (node == NULL) return;
 
         struct knn_list *head = &tree->knn_list_head;
-        struct knn_list *log = malloc(sizeof(*log));
-        if (log != NULL) {
-                log->node = node;
-                log->distance = dist;
-                struct knn_list *p = head->prev;
-                if (tree->knn_num == 0) {
-                } else if (tree->knn_num == 1) {
-                        if (p->distance > log->distance) {
-                                p = p->prev;
-                        }
-                } else {
-                        while (p != head && p->distance > log->distance) {
-                                p = p->prev;
-                        }
+        struct knn_list *p = head->prev;
+        if (tree->knn_num == 1) {
+                if (p->distance > distance) {
+                        p = p->prev;
                 }
+        } else {
+                while (p != head && p->distance > distance) {
+                        p = p->prev;
+                }
+        }
 
-                if (p == head || coord_cmp(p->node->coord, log->node->coord, tree->dim)) {
+        if (p == head || coord_cmp(p->node->coord, node->coord, tree->dim)) {
+                struct knn_list *log = malloc(sizeof(*log));
+                if (log != NULL) {
+                        log->node = node;
+                        log->distance = distance;
                         log->prev = p;
                         log->next = p->next;
                         p->next->prev = log;
