@@ -92,7 +92,6 @@ int main(void)
 
         /* Build test */
         printf("Build KD tree...\n");
-        srandom(time(NULL));
         clock_gettime(CLOCK_MONOTONIC, &start);
         kdtree_rebuild(tree);
         clock_gettime(CLOCK_MONOTONIC, &end);
@@ -100,6 +99,7 @@ int main(void)
 
         /* kNN search test */
         k = 20;
+        srandom(time(NULL));
         double *t = malloc(dim * sizeof(double));
         for (i = 0; i < dim; i++) {
                 t[i] = rd();
