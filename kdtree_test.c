@@ -56,7 +56,7 @@ int main(void)
 
         int k = 3;
         double target[] = { -1, -5 };
-        kdtree_search_knn(tree, target, k);
+        kdtree_knn_search(tree, target, k);
         printf("%d nearest neighbors of sample(", k);
         for (i = 0; i < dim; i++) {
                 if (i == dim - 1) {
@@ -70,7 +70,7 @@ int main(void)
 
         /* Performance test */
         printf("\n>>> Performance test: kNN search for %d samples\n\n", N);
-        dim = 16;
+        dim = 12;
         tree = kdtree_init(dim);
         if (tree == NULL) {
                 exit(-1);
@@ -107,7 +107,7 @@ int main(void)
         printf("Search KD tree...\n");
         srandom(time(NULL));
         clock_gettime(CLOCK_MONOTONIC, &start);
-        kdtree_search_knn(tree, t, k);
+        kdtree_knn_search(tree, t, k);
         clock_gettime(CLOCK_MONOTONIC, &end);
         printf("time span: %ldms\n", (end.tv_sec - start.tv_sec)*1000 + (end.tv_nsec - start.tv_nsec)/1000000);
         printf("%d nearest neighbors of sample(", k);

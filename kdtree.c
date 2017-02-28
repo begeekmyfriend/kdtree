@@ -185,9 +185,7 @@ static void quicksort(struct kdtree *tree, long low, long high, int r)
         for (; ;) {
                 while (D(tree, indexes[++i], r) < pivot) {}
                 while (D(tree, indexes[--j], r) > pivot && j > low) {}
-                if (i >= j) {
-                        break;
-                }
+                if (i >= j) break;
                 swap(indexes + i, indexes + j);
                 if (D(tree, indexes[i], r) == pivot) swap(&indexes[++lt], &indexes[i]);
                 if (D(tree, indexes[j], r) == pivot) swap(&indexes[--gt], &indexes[j]);
@@ -263,15 +261,35 @@ static void knn_list_add(struct kdtree *tree, struct kdnode *node, double distan
         }
 }
 
-static void knn_list_squeeze(struct kdtree *tree)
+static void knn_list_adjust(struct kdtree *tree, struct kdnode *node, double distance)
 {
-        if (tree->knn_num > 0) {
-                struct knn_list *head = &tree->knn_list_head;
-                struct knn_list *log = tree->knn_list_head.prev;
+        if (node == NULL) return;
+
+        struct knn_list *head = &tree->knn_list_head;
+        struct knn_list *p = head->prev;
+        if (tree->knn_num == 1) {
+                if (p->distance > distance) {
+                        p = p->prev;
+                }
+        } else {
+                while (p != head && p->distance > distance) {
+                        p = p->prev;
+                }
+        }
+
+        if (p == head || coord_cmp(p->node->coord, node->coord, tree->dim)) {
+                struct knn_list *log = head->prev;
+                /* Update */
+                log->node = node;
+                log->distance = distance;
+                /* Remove */
                 head->prev = log->prev;
                 log->prev->next = head;
-                free(log);
-                tree->knn_num--;
+                /* insert */
+                log->prev = p;
+                log->next = p->next;
+                p->next->prev = log;
+                p->next = log;
         }
 }
 
@@ -343,7 +361,7 @@ void kdtree_insert(struct kdtree *tree, double *coord)
         memcpy(tree->coord_table[tree->count++], coord, tree->dim * sizeof(double));
 }
 
-void kdtree_search_knn(struct kdtree *tree, double *target, int k)
+void kdtree_knn_search(struct kdtree *tree, double *target, int k)
 {
         int backtracking = 0;
         struct kdnode *node = tree->root;
@@ -382,8 +400,7 @@ void kdtree_search_knn(struct kdtree *tree, double *target, int k)
                                         knn_list_add(tree, node, dist);
                                 } else {
                                         if (dist < knn_max(tree)) {
-                                                knn_list_add(tree, node, dist);
-                                                knn_list_squeeze(tree);
+                                                knn_list_adjust(tree, node, dist);
                                         } else if (dist == knn_max(tree)) {
                                                 knn_list_add(tree, node, dist);
                                         }
