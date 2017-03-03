@@ -551,20 +551,20 @@ struct kdtree *kdtree_init(int dim)
         return tree;
 }
 
-static void kdnode_destory(struct kdnode *node)
+static void kdnode_destroy(struct kdnode *node)
 {
         if (node->left != NULL) {
-                kdnode_destory(node->left);
+                kdnode_destroy(node->left);
         }
         if (node->right != NULL) {
-                kdnode_destory(node->right);
+                kdnode_destroy(node->right);
         }
         kdnode_free(node);
 }
 
-void kdtree_destory(struct kdtree *tree)
+void kdtree_destroy(struct kdtree *tree)
 {
-        kdnode_destory(tree->root);
+        kdnode_destroy(tree->root);
         knn_list_clear(tree);
         free(tree);
 }

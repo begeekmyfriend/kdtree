@@ -66,7 +66,7 @@ int main(void)
                 }
         }
         kdtree_knn_dump(tree);
-        kdtree_destory(tree);
+        kdtree_destroy(tree);
 
         /* Performance test */
         printf("\n>>> Performance test: kNN search for %d samples\n\n", N);
@@ -120,11 +120,11 @@ int main(void)
         }
         kdtree_knn_dump(tree);
 
-        /* Destory test */
-        printf("Destory KD tree...\n");
+        /* Destroy test */
+        printf("Destroy KD tree...\n");
         srandom(time(NULL));
         clock_gettime(CLOCK_MONOTONIC, &start);
-        kdtree_destory(tree);
+        kdtree_destroy(tree);
         clock_gettime(CLOCK_MONOTONIC, &end);
         printf("time span: %ldms\n", (end.tv_sec - start.tv_sec)*1000 + (end.tv_nsec - start.tv_nsec)/1000000);
 

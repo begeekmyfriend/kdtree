@@ -42,7 +42,7 @@ struct kdtree *kdtree_init(int dim);
 void kdtree_insert(struct kdtree *tree, double *coord);
 void kdtree_rebuild(struct kdtree *tree);
 void kdtree_knn_search(struct kdtree *tree, double *coord, int k);
-void kdtree_destory(struct kdtree *tree);
+void kdtree_destroy(struct kdtree *tree);
 void kdtree_dump(struct kdtree *tree);
 void kdtree_knn_dump(struct kdtree *tree);
 
