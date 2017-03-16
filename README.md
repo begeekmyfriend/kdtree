@@ -10,8 +10,6 @@ balanced.
 
 The thought of the implementation is posted [here](https://www.joinquant.com/post/2843).
 
-As for dynamical kdtree you may refer to this [project](https://www.github.com/jtsiomb/kdtree).
-
 ## Test
 ```shell
 cd kdtree
