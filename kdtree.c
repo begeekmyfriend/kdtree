@@ -132,6 +132,22 @@ static void coord_dump_by_indexes(struct kdtree *tree, long low, long high, int 
         printf("\n");
 }
 
+static void bubble_sort(struct kdtree *tree, long low, long high, int r)
+{
+        long i, flag = high + 1;
+        long *indexes = tree->coord_indexes;
+        while (flag > 0) {
+                long len = flag;
+                flag = 0;
+                for (i = low + 1; i < len; i++) {
+                        if (D(tree, indexes[i], r) < D(tree, indexes[i - 1], r)) {
+                                swap(indexes + i - 1, indexes + i);
+                                flag = i;
+                        }
+		}
+        }
+}
+
 static void insert_sort(struct kdtree *tree, long low, long high, int r)
 {
         long i, j;
@@ -153,6 +169,7 @@ static void quicksort(struct kdtree *tree, long low, long high, int r)
 
         if (high - low <= 32) {
                 insert_sort(tree, low, high, r);
+                //bubble_sort(tree, low, high, r);
                 return;
         }
 
