@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <float.h>
 #include <math.h>
 
 #include "kdtree.h"
@@ -69,9 +70,9 @@ static inline int kdnode_passed(struct kdtree *tree, struct kdnode *node)
         return node != NULL ? tree->coord_passed[node->coord_index] : 1;
 }
 
-static inline int knn_has_branch(struct kdtree *tree, double value, double target)
+static inline int knn_has_branch(struct kdtree *tree, int k, double value, double target)
 {
-        return tree->knn_num > 0 && square(target - value) < knn_max(tree) ? 1 : 0;
+        return tree->knn_num < k || square(target - value) < knn_max(tree);
 }
 
 static inline void coord_index_reset(struct kdtree *tree)
@@ -238,14 +239,20 @@ static void kdnode_free(struct kdnode *node)
 
 static int coord_cmp(double *c1, double *c2, int dim)
 {
-        int i, ret;
+        int i;
+        double ret;
         for (i = 0; i < dim; i++) {
                 ret = *c1++ - *c2++;
-                if (ret != 0) {
-                        return ret;
+                if (fabs(ret) >= DBL_EPSILON) {
+                        return ret > 0 ? 1 : -1;
                 }
         }
-        return ret;
+
+        if (fabs(ret) >= DBL_EPSILON) {
+                return 0;
+        } else {
+                return ret > 0 ? 1 : -1;
+        }
 }
 
 static void knn_list_add(struct kdtree *tree, struct kdnode *node, double distance)
@@ -431,7 +438,7 @@ void kdtree_knn_search(struct kdtree *tree, double *target, int k)
                         int r = node->r;
                         if (backtracking) {
                                 /* Need to search another branch? */
-                                if (knn_has_branch(tree, node->coord[r], target[r])) {
+                                if (knn_has_branch(tree, k, node->coord[r], target[r])) {
                                         struct kdnode *old = node;
                                         node = target[r] <= node->coord[r] ? node->left : node->right;
                                         if (kdnode_passed(tree, node)) {
@@ -505,6 +512,7 @@ static void kdnode_build(struct kdtree *tree, struct kdnode **nptr, int r, long 
                 long index = tree->coord_indexes[low];
                 *nptr = kdnode_alloc(tree->coord_table[index], index, r);
         } else if (low < high) {
+                /* Sort and fetch the median to build a balanced BST */
                 quicksort(tree, low, high, r);
                 long median = low + (high - low) / 2;
                 long median_index = tree->coord_indexes[median];
