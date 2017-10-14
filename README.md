@@ -9,10 +9,3 @@ Moreover duplicated samples are allowed to be added with the tree still kept
 balanced.
 
 The thought of the implementation is posted [here](https://www.joinquant.com/post/2843).
-
-## Test
-```shell
-cd kdtree
-gcc -O2 -o kdtree kdtree_test.c kdtree.c -lm
-./kdtree
-```

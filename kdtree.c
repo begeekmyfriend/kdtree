@@ -524,17 +524,13 @@ void kdtree_rebuild(struct kdtree *tree)
 {
         long i, j;
         size_t size_of_coord = tree->dim * sizeof(double);
-        for (i = 0, j = 0; j < tree->count; j++) {
-                if (i == j) {
-                        if (!tree->coord_deleted[i]) {
-                                i++;
-                        }
-                } else {
-                        if (!tree->coord_deleted[j]) {
-                                memcpy(tree->coord_table[i], tree->coord_table[j], size_of_coord);
-                                tree->coord_deleted[i] = 0;
-                                i++;
-                        }
+        for (i = 0, j = 0; j < tree->count; i++, j++) {
+                while (j < tree->count && tree->coord_deleted[j]) {
+                        j++;
+                }
+                if (i != j && j < tree->count) {
+                        memcpy(tree->coord_table[i], tree->coord_table[j], size_of_coord);
+                        tree->coord_deleted[i] = 0;
                 }
         }
         tree->count = i;
