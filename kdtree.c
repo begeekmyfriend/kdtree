@@ -248,7 +248,7 @@ static int coord_cmp(double *c1, double *c2, int dim)
                 }
         }
 
-        if (fabs(ret) >= DBL_EPSILON) {
+        if (fabs(ret) < DBL_EPSILON) {
                 return 0;
         } else {
                 return ret > 0 ? 1 : -1;
