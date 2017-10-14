@@ -425,7 +425,7 @@ void kdtree_knn_search(struct kdtree *tree, double *target, int k)
                                 } else {
                                         if (dist < knn_max(tree)) {
                                                 knn_list_adjust(tree, node, dist);
-                                        } else if (dist == knn_max(tree)) {
+                                        } else if (fabs(dist - knn_max(tree)) < DBL_EPSILON) {
                                                 knn_list_add(tree, node, dist);
                                         }
                                 }
