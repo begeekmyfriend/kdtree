@@ -87,7 +87,7 @@ static inline void coord_table_reset(struct kdtree *tree)
 {
         long i;
         for (i = 0; i < tree->capacity; i++) {
-                tree->coord_table[i] = (double *) ((char *)tree->coords + i * sizeof(double) * tree->dim);
+                tree->coord_table[i] = tree->coords + i * tree->dim;
         }
 }
 
@@ -166,8 +166,6 @@ static void insert_sort(struct kdtree *tree, long low, long high, int r)
 
 static void quicksort(struct kdtree *tree, long low, long high, int r)
 {
-        if (low >= high) return;
-
         if (high - low <= 32) {
                 insert_sort(tree, low, high, r);
                 //bubble_sort(tree, low, high, r);
@@ -303,13 +301,13 @@ static void knn_list_adjust(struct kdtree *tree, struct kdnode *node, double dis
 
         if (p == head || coord_cmp(p->node->coord, node->coord, tree->dim)) {
                 struct knn_list *log = head->prev;
-                /* Update */
+                /* Replace the original max one */
                 log->node = node;
                 log->distance = distance;
-                /* Remove */
+                /* Remove from the max position */
                 head->prev = log->prev;
                 log->prev->next = head;
-                /* insert */
+                /* insert as a new one */
                 log->prev = p;
                 log->next = p->next;
                 p->next->prev = log;
@@ -357,23 +355,6 @@ static void kdnode_dump(struct kdnode *node, int dim)
                 }
         } else {
                 printf("(none)\n");
-        }
-}
-
-void kdtree_knn_dump(struct kdtree *tree)
-{
-        int i;
-        struct knn_list *p = tree->knn_list_head.next;
-        while (p != &tree->knn_list_head) {
-                putchar('(');
-                for (i = 0; i < tree->dim; i++) {
-                        if (i == tree->dim - 1) {
-                                printf("%.2lf) Distance:%lf\n", p->node->coord[i], sqrt(p->distance));
-                        } else {
-                                printf("%.2lf, ", p->node->coord[i]);
-                        }
-                }
-                p = p->next;
         }
 }
 

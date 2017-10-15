@@ -1,7 +1,6 @@
-/* gcc -O2 -o kdtree kdtree_test.c kdtree.c -lm */
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <time.h>
 
 #include "kdtree.h"
@@ -10,7 +9,24 @@
 
 static inline double rd(void)
 {
-        return (double)rand() / RAND_MAX * 20 - 10;
+        return (double) rand() / RAND_MAX * 20 - 10;
+}
+
+static void kdtree_knn_dump(struct kdtree *tree)
+{
+        int i;
+        struct knn_list *p = tree->knn_list_head.next;
+        while (p != &tree->knn_list_head) {
+                putchar('(');
+                for (i = 0; i < tree->dim; i++) {
+                        if (i == tree->dim - 1) {
+                                printf("%.2lf) Distance:%lf\n", p->node->coord[i], sqrt(p->distance));
+                        } else {
+                                printf("%.2lf, ", p->node->coord[i]);
+                        }
+                }
+                p = p->next;
+        }
 }
 
 int main(void)
@@ -97,7 +113,7 @@ int main(void)
         clock_gettime(CLOCK_MONOTONIC, &end);
         printf("time span: %ldms\n", (end.tv_sec - start.tv_sec)*1000 + (end.tv_nsec - start.tv_nsec)/1000000);
 
-        /* kNN search test */
+        /* Search test */
         k = 20;
         srandom(time(NULL));
         double *t = malloc(dim * sizeof(double));
