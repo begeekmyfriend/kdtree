@@ -10,25 +10,6 @@
 
 #include "kdtree.h"
 
-struct kdnode_backlog {
-        struct kdnode *node;
-        int next_sub_idx;
-};
-
-static inline void
-nbl_push(struct kdnode_backlog *nbl, struct kdnode_backlog **top, struct kdnode_backlog **bottom)
-{
-        if (*top - *bottom < KDTREE_MAX_LEVEL) {
-                (*(*top)++) = *nbl;
-        }
-}
-
-static inline struct kdnode_backlog *
-nbl_pop(struct kdnode_backlog **top, struct kdnode_backlog **bottom)
-{
-        return *top > *bottom ? --*top : NULL;
-}
-
 static inline int is_leaf(struct kdnode *node)
 {
         return node->left == node->right;
@@ -70,7 +51,7 @@ static inline int kdnode_passed(struct kdtree *tree, struct kdnode *node)
         return node != NULL ? tree->coord_passed[node->coord_index] : 1;
 }
 
-static inline int knn_has_branch(struct kdtree *tree, int k, double value, double target)
+static inline int knn_search_on(struct kdtree *tree, int k, double value, double target)
 {
         return tree->knn_num < k || square(target - value) < knn_max(tree);
 }
@@ -145,7 +126,7 @@ static void bubble_sort(struct kdtree *tree, long low, long high, int r)
                                 swap(indexes + i - 1, indexes + i);
                                 flag = i;
                         }
-		}
+                }
         }
 }
 
@@ -366,85 +347,61 @@ void kdtree_insert(struct kdtree *tree, double *coord)
         memcpy(tree->coord_table[tree->count++], coord, tree->dim * sizeof(double));
 }
 
+static void knn_pickup(struct kdtree *tree, struct kdnode *node, double *target, int k)
+{
+        double dist = distance(node->coord, target, tree->dim);
+        if (tree->knn_num < k) {
+                knn_list_add(tree, node, dist);
+        } else {
+                if (dist < knn_max(tree)) {
+                        knn_list_adjust(tree, node, dist);
+                } else if (fabs(dist - knn_max(tree)) < DBL_EPSILON) {
+                        knn_list_add(tree, node, dist);
+                }
+        }
+}
+
+static void kdtree_search_recursive(struct kdtree *tree, struct kdnode *node, double *target, int k, int *pickup)
+{
+        if (node == NULL || kdnode_passed(tree, node)) {
+                return;
+        }
+
+        int r = node->r;
+        if (!knn_search_on(tree, k, node->coord[r], target[r])) {
+                return;
+        }
+
+        if (*pickup) {
+                tree->coord_passed[node->coord_index] = 1;
+                knn_pickup(tree, node, target, k);
+                kdtree_search_recursive(tree, node->left, target, k, pickup);
+                kdtree_search_recursive(tree, node->right, target, k, pickup);
+        } else {
+                if (is_leaf(node)) {
+                        *pickup = 1;
+                } else {
+                        if (target[r] <= node->coord[r]) {
+                                kdtree_search_recursive(tree, node->left, target, k, pickup);
+                                kdtree_search_recursive(tree, node->right, target, k, pickup);
+                        } else {
+                                kdtree_search_recursive(tree, node->right, target, k, pickup);
+                                kdtree_search_recursive(tree, node->left, target, k, pickup);
+                        }
+                }
+                /* back track and pick up  */
+                if (*pickup) {
+                        tree->coord_passed[node->coord_index] = 1;
+                        knn_pickup(tree, node, target, k);
+                }
+        }
+}
+
 void kdtree_knn_search(struct kdtree *tree, double *target, int k)
 {
-        int backtracking = 0;
-        struct kdnode *node = tree->root;
-        struct kdnode_backlog nbl, *p_nbl = NULL;
-        struct kdnode_backlog *top, *bottom, nbl_stack[KDTREE_MAX_LEVEL];
-
-        if (k <= 0) return;
-        top = bottom = nbl_stack;
-        coord_passed_reset(tree);
-
-        for (; ;) {
-                if (node != NULL) {
-                        /* Backtracking */
-                        if (tree->coord_passed[node->coord_index]) {
-                                node = NULL;
-                                continue;
-                        }
-
-                        int sub_idx = KDTREE_LEFT_INDEX;
-                        if (p_nbl != NULL) {
-                                sub_idx = p_nbl->next_sub_idx;
-                                /* Backlog should not be left in next loop */
-                                p_nbl = NULL;
-                        }
-
-                        /* Backlog the node */
-                        if (is_leaf(node) || sub_idx == KDTREE_RIGHT_INDEX) {
-                                nbl.node = NULL;
-                                nbl.next_sub_idx = KDTREE_LEFT_INDEX;
-                                backtracking = 1;
-                                tree->coord_passed[node->coord_index] = 1;
-
-                                /* kNN selection */
-                                double dist = distance(node->coord, target, tree->dim);
-                                if (tree->knn_num < k) {
-                                        knn_list_add(tree, node, dist);
-                                } else {
-                                        if (dist < knn_max(tree)) {
-                                                knn_list_adjust(tree, node, dist);
-                                        } else if (fabs(dist - knn_max(tree)) < DBL_EPSILON) {
-                                                knn_list_add(tree, node, dist);
-                                        }
-                                }
-                        } else {
-                                nbl.node = node;
-                                nbl.next_sub_idx = KDTREE_RIGHT_INDEX;
-                        }
-                        nbl_push(&nbl, &top, &bottom);
-
-                        int r = node->r;
-                        if (backtracking) {
-                                /* Need to search another branch? */
-                                if (knn_has_branch(tree, k, node->coord[r], target[r])) {
-                                        struct kdnode *old = node;
-                                        node = target[r] <= node->coord[r] ? node->left : node->right;
-                                        if (kdnode_passed(tree, node)) {
-                                                node = node == old->left ? old->right : old->left;
-                                                if (kdnode_passed(tree, node)) {
-                                                        node = NULL;
-                                                }
-                                        }
-                                } else {
-                                        node = NULL;
-                                }
-                        } else {
-                                /* If the target value equals to the current node,
-                                 * we still traverse into its left branch.
-                                 */
-                                node = target[r] <= node->coord[r] ? node->left : node->right;
-                        }
-                } else {
-                        p_nbl = nbl_pop(&top, &bottom);
-                        if (p_nbl == NULL) {
-                                /* End of traversal */
-                                break;
-                        }
-                        node = p_nbl->node;
-                }
+        if (k > 0) {
+                int pickup = 0;
+                kdtree_search_recursive(tree, tree->root, target, k, &pickup);
         }
 }
 
@@ -534,7 +491,7 @@ struct kdtree *kdtree_init(int dim)
                 tree->root = NULL;
                 tree->dim = dim;
                 tree->count = 0;
-                tree->capacity = 1024;
+                tree->capacity = 65536;
                 tree->knn_list_head.next = &tree->knn_list_head;
                 tree->knn_list_head.prev = &tree->knn_list_head;
                 tree->knn_list_head.node = NULL;
@@ -569,6 +526,28 @@ void kdtree_destroy(struct kdtree *tree)
         kdnode_destroy(tree->root);
         knn_list_clear(tree);
         free(tree);
+}
+
+#define _KDTREE_DEBUG
+
+#ifdef _KDTREE_DEBUG
+struct kdnode_backlog {
+        struct kdnode *node;
+        int next_sub_idx;
+};
+
+static inline void
+nbl_push(struct kdnode_backlog *nbl, struct kdnode_backlog **top, struct kdnode_backlog **bottom)
+{
+        if (*top - *bottom < KDTREE_MAX_LEVEL) {
+                (*(*top)++) = *nbl;
+        }
+}
+
+static inline struct kdnode_backlog *
+nbl_pop(struct kdnode_backlog **top, struct kdnode_backlog **bottom)
+{
+        return *top > *bottom ? --*top : NULL;
 }
 
 void kdtree_dump(struct kdtree *tree)
@@ -630,3 +609,4 @@ void kdtree_dump(struct kdtree *tree)
                 }
         }
 }
+#endif
