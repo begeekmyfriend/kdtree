@@ -536,28 +536,13 @@ struct kdnode_backlog {
         int next_sub_idx;
 };
 
-static inline void
-nbl_push(struct kdnode_backlog *nbl, struct kdnode_backlog **top, struct kdnode_backlog **bottom)
-{
-        if (*top - *bottom < KDTREE_MAX_LEVEL) {
-                (*(*top)++) = *nbl;
-        }
-}
-
-static inline struct kdnode_backlog *
-nbl_pop(struct kdnode_backlog **top, struct kdnode_backlog **bottom)
-{
-        return *top > *bottom ? --*top : NULL;
-}
-
 void kdtree_dump(struct kdtree *tree)
 {
         int level = 0;
         struct kdnode *node = tree->root;
         struct kdnode_backlog nbl, *p_nbl = NULL;
-        struct kdnode_backlog *top, *bottom, nbl_stack[KDTREE_MAX_LEVEL];
-
-        top = bottom = nbl_stack;
+        struct kdnode_backlog nbl_stack[KDTREE_MAX_LEVEL];
+        struct kdnode_backlog *top = nbl_stack;
 
         for (; ;) {
                 if (node != NULL) {
@@ -570,13 +555,13 @@ void kdtree_dump(struct kdtree *tree)
 
                         /* Backlog the node */
                         if (is_leaf(node) || sub_idx == KDTREE_LEFT_INDEX) {
-                                nbl.node = NULL;
-                                nbl.next_sub_idx = KDTREE_RIGHT_INDEX;
+                                top->node = NULL;
+                                top->next_sub_idx = KDTREE_RIGHT_INDEX;
                         } else {
-                                nbl.node = node;
-                                nbl.next_sub_idx = KDTREE_LEFT_INDEX;
+                                top->node = node;
+                                top->next_sub_idx = KDTREE_LEFT_INDEX;
                         }
-                        nbl_push(&nbl, &top, &bottom);
+                        top++;
                         level++;
 
                         /* Draw lines as long as sub_idx is the first one */
@@ -599,7 +584,7 @@ void kdtree_dump(struct kdtree *tree)
                         /* Move down according to sub_idx */
                         node = sub_idx == KDTREE_LEFT_INDEX ? node->left : node->right;
                 } else {
-                        p_nbl = nbl_pop(&top, &bottom);
+                        p_nbl = top == nbl_stack ? NULL : --top;
                         if (p_nbl == NULL) {
                                 /* End of traversal */
                                 break;
