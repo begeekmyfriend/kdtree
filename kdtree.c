@@ -512,12 +512,9 @@ struct kdtree *kdtree_init(int dim)
 
 static void kdnode_destroy(struct kdnode *node)
 {
-        if (node->left != NULL) {
-                kdnode_destroy(node->left);
-        }
-        if (node->right != NULL) {
-                kdnode_destroy(node->right);
-        }
+        if (node == NULL) return;
+        kdnode_destroy(node->left);
+        kdnode_destroy(node->right);
         kdnode_free(node);
 }
 
@@ -525,6 +522,11 @@ void kdtree_destroy(struct kdtree *tree)
 {
         kdnode_destroy(tree->root);
         knn_list_clear(tree);
+        free(tree->coords);
+        free(tree->coord_table);
+        free(tree->coord_indexes);
+        free(tree->coord_deleted);
+        free(tree->coord_passed);
         free(tree);
 }
 
