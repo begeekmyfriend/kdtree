@@ -46,6 +46,11 @@ static inline double D(struct kdtree *tree, long index, int r)
         return tree->coord_table[index][r];
 }
 
+static inline double *P(struct kdtree *tree, long index, int r)
+{
+        return &tree->coord_table[index][r];
+}
+
 static inline int kdnode_passed(struct kdtree *tree, struct kdnode *node)
 {
         return node != NULL ? tree->coord_passed[node->coord_index] : 1;
@@ -114,89 +119,36 @@ static void coord_dump_by_indexes(struct kdtree *tree, long low, long high, int 
         printf("\n");
 }
 
-static void bubble_sort(struct kdtree *tree, long low, long high, int r)
+static void quicksort(struct kdtree *tree, long lo, long hi, int r)
 {
-        long i, flag = high + 1;
-        long *indexes = tree->coord_indexes;
-        while (flag > 0) {
-                long len = flag;
-                flag = 0;
-                for (i = low + 1; i < len; i++) {
-                        if (D(tree, indexes[i], r) < D(tree, indexes[i - 1], r)) {
-                                swap(indexes + i - 1, indexes + i);
-                                flag = i;
-                        }
-                }
-        }
-}
+        long i, j, *indexes;
+        double *p, pivot;
 
-static void insert_sort(struct kdtree *tree, long low, long high, int r)
-{
-        long i, j;
-        long *indexes = tree->coord_indexes;
-        for (i = low + 1; i <= high; i++) {
-                long tmp_idx = indexes[i];
-                double tmp_value = D(tree, indexes[i], r);
-                j = i - 1;
-                for (; j >= low && D(tree, indexes[j], r) > tmp_value; j--) {
-                        indexes[j + 1] = indexes[j];
-                }
-                indexes[j + 1] = tmp_idx;
-        }
-}
-
-static void quicksort(struct kdtree *tree, long low, long high, int r)
-{
-        if (high - low <= 32) {
-                insert_sort(tree, low, high, r);
-                //bubble_sort(tree, low, high, r);
+        if (lo >= hi) {
                 return;
         }
 
-        long *indexes = tree->coord_indexes;
-        /* median of 3 */
-        long mid = low + (high - low) / 2;
-        if (D(tree, indexes[low], r) > D(tree, indexes[mid], r)) {
-                swap(indexes + low, indexes + mid);
-        }
-        if (D(tree, indexes[low], r) > D(tree, indexes[high], r)) {
-                swap(indexes + low, indexes + high);
-        }
-        if (D(tree, indexes[high], r) > D(tree, indexes[mid], r)) {
-                swap(indexes + high, indexes + mid);
-        }
+        i = lo;
+        j = hi;
+        indexes = tree->coord_indexes;
+        pivot = D(tree, indexes[lo], r);
 
-        /* D(indexes[low]) <= D(indexes[high]) <= D(indexes[mid]) */
-        double pivot = D(tree, indexes[high], r);
-
-        /* 3-way partition
-         * +---------+-----------+---------+-------------+---------+
-         * |  pivot  |  <=pivot  |   ?     |  >=pivot    |  pivot  |
-         * +---------+-----------+---------+-------------+---------+
-         * low     lt             i       j               gt    high
-         */
-        long i = low - 1;
-        long lt = i;
-        long j = high;
-        long gt = j;
-        for (; ;) {
-                while (D(tree, indexes[++i], r) < pivot) {}
-                while (D(tree, indexes[--j], r) > pivot && j > low) {}
-                if (i >= j) break;
-                swap(indexes + i, indexes + j);
-                if (D(tree, indexes[i], r) == pivot) swap(&indexes[++lt], &indexes[i]);
-                if (D(tree, indexes[j], r) == pivot) swap(&indexes[--gt], &indexes[j]);
+        while (i < j) {
+                while (i < j && D(tree, indexes[j], r) >= pivot) j--;
+                /* Loop invariant: nums[j] > pivot or i == j */
+                p = P(tree, indexes[i], r);
+                *p = D(tree, indexes[j], r);
+                while (i < j && D(tree, indexes[i], r) <= pivot) i++;
+                /* Loop invariant: nums[i] < pivot or i == j */
+                p = P(tree, indexes[j], r);
+                *p = D(tree, indexes[i], r);
         }
-        /* i == j or j + 1 == i */
-        swap(indexes + i, indexes + high);
+        /* Loop invariant: i == j */
+        p = P(tree, indexes[i], r);
+        *p = pivot;
 
-        /* Move equal elements to the middle of array */
-        long x, y;
-        for (x = low, j = i - 1; x <= lt && j > lt; x++, j--) swap(indexes + x, indexes + j);
-        for (y = high, i = i + 1; y >= gt && i < gt; y--, i++) swap(indexes + y, indexes + i);
-
-        quicksort(tree, low, j - lt + x - 1, r);
-        quicksort(tree, i + y - gt, high, r);
+        quicksort(tree, lo, i - 1, r);
+        quicksort(tree, i + 1, hi, r);
 }
 
 static struct kdnode *kdnode_alloc(double *coord, long index, int r)
@@ -372,28 +324,26 @@ static void kdtree_search_recursive(struct kdtree *tree, struct kdnode *node, do
                 return;
         }
 
-        if (*pickup) {
-                tree->coord_passed[node->coord_index] = 1;
-                knn_pickup(tree, node, target, k);
-                kdtree_search_recursive(tree, node->left, target, k, pickup);
-                kdtree_search_recursive(tree, node->right, target, k, pickup);
+        if (is_leaf(node)) {
+                *pickup = 1;
         } else {
-                if (is_leaf(node)) {
-                        *pickup = 1;
+                if (target[r] <= node->coord[r]) {
+                        kdtree_search_recursive(tree, node->left, target, k, pickup);
+                        if (*pickup) {
+                                kdtree_search_recursive(tree, node->right, target, k, pickup);
+                        }
                 } else {
-                        if (target[r] <= node->coord[r]) {
-                                kdtree_search_recursive(tree, node->left, target, k, pickup);
-                                kdtree_search_recursive(tree, node->right, target, k, pickup);
-                        } else {
-                                kdtree_search_recursive(tree, node->right, target, k, pickup);
+                        kdtree_search_recursive(tree, node->right, target, k, pickup);
+                        if (*pickup) {
                                 kdtree_search_recursive(tree, node->left, target, k, pickup);
                         }
                 }
-                /* back track and pick up  */
-                if (*pickup) {
-                        tree->coord_passed[node->coord_index] = 1;
-                        knn_pickup(tree, node, target, k);
-                }
+        }
+
+        /* back track and pick up  */
+        if (*pickup) {
+                tree->coord_passed[node->coord_index] = 1;
+                knn_pickup(tree, node, target, k);
         }
 }
 
