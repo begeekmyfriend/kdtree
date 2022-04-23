@@ -8,4 +8,5 @@ and the bad thing is we have to wait some time for the finish of tree rebuild.
 Moreover duplicated samples are allowed to be added with the tree still kept
 balanced.
 
-The thought of the implementation is posted [here](https://www.joinquant.com/post/2843).
+The thought of the implementation is posted [here](https://www.joinquant.com/post/2843). Thanks 魏文睿 <weiwenrui@std.uestc.edu.cn> who
+pointed out bugs in the previous version.
