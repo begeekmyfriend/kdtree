@@ -329,12 +329,12 @@ static void kdtree_search_recursive(struct kdtree *tree, struct kdnode *node, do
         } else {
                 if (target[r] <= node->coord[r]) {
                         kdtree_search_recursive(tree, node->left, target, k, pickup);
-                        if (*pickup) {
+                        if (*pickup || node->left == NULL) {
                                 kdtree_search_recursive(tree, node->right, target, k, pickup);
                         }
                 } else {
                         kdtree_search_recursive(tree, node->right, target, k, pickup);
-                        if (*pickup) {
+                        if (*pickup || node->right == NULL) {
                                 kdtree_search_recursive(tree, node->left, target, k, pickup);
                         }
                 }
