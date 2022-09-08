@@ -46,11 +46,6 @@ static inline double D(struct kdtree *tree, long index, int r)
         return tree->coord_table[index][r];
 }
 
-static inline double *P(struct kdtree *tree, long index, int r)
-{
-        return &tree->coord_table[index][r];
-}
-
 static inline int kdnode_passed(struct kdtree *tree, struct kdnode *node)
 {
         return node != NULL ? tree->coord_passed[node->coord_index] : 1;
@@ -121,8 +116,8 @@ static void coord_dump_by_indexes(struct kdtree *tree, long low, long high, int 
 
 static void quicksort(struct kdtree *tree, long lo, long hi, int r)
 {
-        long i, j, *indexes;
-        double *p, pivot;
+        long i, j, pivot, *indexes;
+        double *p;
 
         if (lo >= hi) {
                 return;
@@ -131,21 +126,18 @@ static void quicksort(struct kdtree *tree, long lo, long hi, int r)
         i = lo;
         j = hi;
         indexes = tree->coord_indexes;
-        pivot = D(tree, indexes[lo], r);
+        pivot = indexes[lo];
 
         while (i < j) {
-                while (i < j && D(tree, indexes[j], r) >= pivot) j--;
+                while (i < j && D(tree, indexes[j], r) >= D(tree, pivot, r)) j--;
                 /* Loop invariant: nums[j] > pivot or i == j */
-                p = P(tree, indexes[i], r);
-                *p = D(tree, indexes[j], r);
-                while (i < j && D(tree, indexes[i], r) <= pivot) i++;
+                indexes[i] = indexes[j];
+                while (i < j && D(tree, indexes[i], r) <= D(tree, pivot, r)) i++;
                 /* Loop invariant: nums[i] < pivot or i == j */
-                p = P(tree, indexes[j], r);
-                *p = D(tree, indexes[i], r);
+                indexes[j] = indexes[i];
         }
         /* Loop invariant: i == j */
-        p = P(tree, indexes[i], r);
-        *p = pivot;
+        indexes[i] = pivot;
 
         quicksort(tree, lo, i - 1, r);
         quicksort(tree, i + 1, hi, r);
