@@ -242,14 +242,21 @@ static void knn_list_adjust(struct kdtree *tree, struct kdnode *node, double dis
 
 static void knn_list_clear(struct kdtree *tree)
 {
-        struct knn_list *head = &tree->knn_list_head;
-        struct knn_list *p = head->next;
-        while (p != head) {
-                struct knn_list *prev = p;
-                p = p->next;
-                free(prev);
+        if (tree->knn_num > 0) {
+                struct knn_list *head = &tree->knn_list_head;
+                struct knn_list *p = head->next;
+                while (p != head) {
+                        struct knn_list *prev = p;
+                        p = p->next;
+                        free(prev);
+                }
+                tree->knn_num = 0;
         }
-        tree->knn_num = 0;
+
+        tree->knn_list_head.next = &tree->knn_list_head;
+        tree->knn_list_head.prev = &tree->knn_list_head;
+        tree->knn_list_head.node = NULL;
+        tree->knn_list_head.distance = 0;
 }
 
 static void resize(struct kdtree *tree)
@@ -343,6 +350,8 @@ void kdtree_knn_search(struct kdtree *tree, double *target, int k)
 {
         if (k > 0) {
                 int pickup = 0;
+                knn_list_clear(tree);
+                coord_passed_reset(tree);
                 kdtree_search_recursive(tree, tree->root, target, k, &pickup);
         }
 }
@@ -434,10 +443,6 @@ struct kdtree *kdtree_init(int dim)
                 tree->dim = dim;
                 tree->count = 0;
                 tree->capacity = 65536;
-                tree->knn_list_head.next = &tree->knn_list_head;
-                tree->knn_list_head.prev = &tree->knn_list_head;
-                tree->knn_list_head.node = NULL;
-                tree->knn_list_head.distance = 0;
                 tree->knn_num = 0;
                 tree->coords = malloc(dim * sizeof(double) * tree->capacity);
                 tree->coord_table = malloc(sizeof(double *) * tree->capacity);

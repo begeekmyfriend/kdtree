@@ -82,6 +82,19 @@ int main(void)
                 }
         }
         kdtree_knn_dump(tree);
+
+        double target1[] = { -8, -7 };
+        kdtree_knn_search(tree, target1, k);
+        printf("%d nearest neighbors of sample(", k);
+        for (i = 0; i < dim; i++) {
+                if (i == dim - 1) {
+                        printf("%.2lf):\n", target1[i]);
+                } else {
+                        printf("%.2lf, ", target1[i]);
+                }
+        }
+        kdtree_knn_dump(tree);
+
         kdtree_destroy(tree);
 
         /* Performance test */
