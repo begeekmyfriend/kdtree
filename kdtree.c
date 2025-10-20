@@ -10,6 +10,27 @@
 
 #include "kdtree.h"
 
+void kdtree_knn_dump(struct kdtree *tree, double *candidates) 
+{
+        int i, j = 0;
+        struct knn_list *p = tree->knn_list_head.next;
+        const int dim = tree->dim;
+        while (p != &tree->knn_list_head) {
+                putchar('(');
+                for (i = 0; i < tree->dim; i++) {
+                        if (i == tree->dim - 1) {
+                                printf("%.2lf) Distance:%lf\n", p->node->coord[i], sqrt(p->distance));
+                        } else {
+                                printf("%.2lf, ", p->node->coord[i]);
+                        }
+                        candidates[j*dim+i] = p->node->coord[i];
+                }
+                p = p->next;
+                j++;
+        }
+}
+
+
 static inline int is_leaf(struct kdnode *node)
 {
         return node->left == node->right;
@@ -544,3 +565,105 @@ void kdtree_dump(struct kdtree *tree)
         }
 }
 #endif
+
+
+// (Includes and struct definitions from kdtree.h)
+// (kdnode_dump helper function from original kdtree.c)
+
+/* * Helper struct for our new Root-Left-Right stack.
+ * We need to know the node and its level.
+ */
+struct kdnode_dump_item {
+        struct kdnode *node;
+        int level;
+};
+
+/*
+ * This is the modified kdtree_dump function.
+ * It uses a standard iterative Pre-order (Root-Left-Right) traversal.
+ *
+ * It manages the line-art state explicitly using a 
+ * 'level_states' array.
+ */
+void kdtree_dump_simple(struct kdtree *tree)
+{
+        if (tree->root == NULL) {
+                printf("Tree is empty.\n");
+                return;
+        }
+
+        /* * 1. Create our stack
+         */
+        struct kdnode_dump_item stack[KDTREE_MAX_LEVEL];
+        int top = -1;
+
+        /*
+         * 2. Create state for line-drawing
+         * This array tracks whether to draw a '|' at a given level.
+         * 1 = draw '|', 0 = draw ' '
+         */
+        int level_states[KDTREE_MAX_LEVEL];
+        memset(level_states, 0, sizeof(level_states));
+        
+        /*
+         * 3. Push the root node to start
+         */
+        top++;
+        stack[top].node = tree->root;
+        stack[top].level = 0;
+
+        while (top != -1) {
+                /*
+                 * Pop a node from the stack
+                 */
+                struct kdnode_dump_item current_item = stack[top--];
+                struct kdnode *node = current_item.node;
+                int level = current_item.level;
+
+                /* --- This is the "Visit" step --- */
+                /* Print the prefix lines ('|' or ' ') */
+                int i;
+                for (i = 0; i < level; i++) {
+                        if (level_states[i]  == 2) {
+                                printf("%-8s", "|");
+                        } else {
+                                printf("%-8s", " ");
+                        }
+                }
+                
+                /* Print the node itself */
+                printf("%-8s", "+-------");
+                kdnode_dump(node, tree->dim);
+                /* --- End Visit --- */
+                level_states[level]++;
+
+                /*
+                 * 4. Update line-drawing state for the *next* level
+                 * If we have a left child, the right child (if it exists)
+                 * will need a '|' at this level.
+                 */
+                if (node->left != NULL && node->right != NULL) {
+                        level_states[level+1] = 1;
+                } else {
+                        level_states[level+1] = 0;
+                }
+
+                /*
+                 * 5. Push children onto the stack (Root-Left-Right)
+                 * We push RIGHT first, then LEFT.
+                 */
+                if (node->left != NULL) {
+                        top++;
+                        stack[top].node = node->left;
+                        stack[top].level = level + 1;
+                }
+
+                if (node->right != NULL) {
+                        top++;
+                        stack[top].node = node->right;
+                        stack[top].level = level + 1;
+                }
+                
+                
+        }
+}

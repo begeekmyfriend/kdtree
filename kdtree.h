@@ -5,6 +5,11 @@
 #ifndef _KD_TREE_H
 #define _KD_TREE_H
 
+/* ADD THIS LINE */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define KDTREE_MAX_LEVEL 64
 #define KDTREE_LEFT_INDEX 0
 #define KDTREE_RIGHT_INDEX 1
@@ -44,5 +49,14 @@ void kdtree_rebuild(struct kdtree *tree);
 void kdtree_knn_search(struct kdtree *tree, double *coord, int k);
 void kdtree_destroy(struct kdtree *tree);
 void kdtree_dump(struct kdtree *tree);
+void kdtree_dump_simple(struct kdtree *tree);
+void kdtree_knn_dump(struct kdtree *tree, double *candidates);
+
+
+/* ADD THESE LINES */
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif /* _KD_TREE_H */
