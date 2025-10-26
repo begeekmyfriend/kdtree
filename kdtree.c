@@ -340,21 +340,18 @@ static void kdtree_search_recursive(struct kdtree *tree, struct kdnode *node, do
         }
 
         int r = node->r;
-        if (!knn_search_on(tree, k, node->coord[r], target[r])) {
-                return;
-        }
 
         if (is_leaf(node)) {
                 *pickup = 1;
         } else {
                 if (target[r] <= node->coord[r]) {
                         kdtree_search_recursive(tree, node->left, target, k, pickup);
-                        if (*pickup || node->left == NULL) {
+                        if ((*pickup && knn_search_on(tree, k, node->coord[r], target[r])) || node->left == NULL) {
                                 kdtree_search_recursive(tree, node->right, target, k, pickup);
                         }
                 } else {
                         kdtree_search_recursive(tree, node->right, target, k, pickup);
-                        if (*pickup || node->right == NULL) {
+                        if ((*pickup && knn_search_on(tree, k, node->coord[r], target[r])) || node->right == NULL) {
                                 kdtree_search_recursive(tree, node->left, target, k, pickup);
                         }
                 }
@@ -418,6 +415,7 @@ void kdtree_delete(struct kdtree *tree, double *coord)
 
 static void kdnode_build(struct kdtree *tree, struct kdnode **nptr, int r, long low, long high)
 {
+        /* BST preorder constructure */
         if (low == high) {
                 long index = tree->coord_indexes[low];
                 *nptr = kdnode_alloc(tree->coord_table[index], index, r);
