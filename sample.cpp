@@ -27,6 +27,27 @@ public:
 	operator cv::Point2d() const { return cv::Point2d((*this)[0], (*this)[1]); }
 };
 
+void kdtree_knn_dump(struct kdtree *tree, double *candidates, int k) 
+{
+        int i, j = 0;
+        struct knn_list *p = tree->knn_list_head.next;
+        const int dim = tree->dim;
+        printf("The nearest %d samples are as follows:\n", k);
+        while (p != &tree->knn_list_head) {
+                putchar('(');
+                for (i = 0; i < tree->dim; i++) {
+                        if (i == tree->dim - 1) {
+                                printf("%.2lf) Distance:%lf\n", p->node->coord[i], sqrt(p->distance));
+                        } else {
+                                printf("%.2lf, ", p->node->coord[i]);
+                        }
+                        candidates[j*dim+i] = p->node->coord[i];
+                }
+                p = p->next;
+                j++;
+        }
+}
+
 int main(int argc, char **argv)
 {
 	const int seed = argc > 1 ? std::stoi(argv[1]) : 0;
@@ -64,6 +85,7 @@ int main(int argc, char **argv)
 	kdtree_rebuild(tree);
 
 	// generate query (center of the space)
+	const int k = 100;
 	const MyPoint query(0.5 * width, 0.5 * height);
 	cv::circle(img, cv::Point2d(query), 1, cv::Scalar(0, 0, 255), -1);
 
@@ -71,17 +93,16 @@ int main(int argc, char **argv)
 	const cv::Mat I0 = img.clone();
 	double target1[] = {query[0], query[1]};
 	kdtree_knn_search(tree, target1, 1);
-	// kdtree_knn_dump(tree, nullptr);
+	// kdtree_knn_dump(tree, nullptr, k);
 	// const int idx = kdtree.nnSearch(query);
 	// cv::circle(I0, cv::Point2d(points[idx]), 1, cv::Scalar(255, 255, 0), -1);
 	// cv::line(I0, cv::Point2d(query), cv::Point2d(points[idx]), cv::Scalar(0, 0, 255));
 
 	// k-nearest neigbors search
 	const cv::Mat I1 = img.clone();
-	const int k = 100;
 	double candidates[k*dim];
 	kdtree_knn_search(tree, target1, k);
-	kdtree_knn_dump(tree, candidates);
+	kdtree_knn_dump(tree, candidates, k);
 	for (int i = 0; i < k; i++){
 		cv::circle(I1, cv::Point2d(candidates[i*dim], candidates[i*dim + 1]), 1, cv::Scalar(255, 255, 0), -1);	
 		cv::line(I1, cv::Point2d(query), cv::Point2d(candidates[i*dim], candidates[i*dim + 1]), cv::Scalar(0, 0, 255));
@@ -96,7 +117,7 @@ int main(int argc, char **argv)
 	
 	// radius search
 	const cv::Mat I2 = img.clone();
-	const double radius = 50;
+	// const double radius = 50;
 	// const std::vector<int> radIndices = kdtree.radiusSearch(query, radius);
 	// for (int i : radIndices)
 	// 	cv::circle(I2, cv::Point2d(points[i]), 1, cv::Scalar(255, 255, 0), -1);

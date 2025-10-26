@@ -10,27 +10,6 @@
 
 #include "kdtree.h"
 
-void kdtree_knn_dump(struct kdtree *tree, double *candidates) 
-{
-        int i, j = 0;
-        struct knn_list *p = tree->knn_list_head.next;
-        const int dim = tree->dim;
-        while (p != &tree->knn_list_head) {
-                putchar('(');
-                for (i = 0; i < tree->dim; i++) {
-                        if (i == tree->dim - 1) {
-                                printf("%.2lf) Distance:%lf\n", p->node->coord[i], sqrt(p->distance));
-                        } else {
-                                printf("%.2lf, ", p->node->coord[i]);
-                        }
-                        candidates[j*dim+i] = p->node->coord[i];
-                }
-                p = p->next;
-                j++;
-        }
-}
-
-
 static inline int is_leaf(struct kdnode *node)
 {
         return node->left == node->right;

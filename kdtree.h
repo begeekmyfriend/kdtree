@@ -50,8 +50,6 @@ void kdtree_knn_search(struct kdtree *tree, double *coord, int k);
 void kdtree_destroy(struct kdtree *tree);
 void kdtree_dump(struct kdtree *tree);
 void kdtree_dump_simple(struct kdtree *tree);
-void kdtree_knn_dump(struct kdtree *tree, double *candidates);
-
 
 /* ADD THESE LINES */
 #ifdef __cplusplus

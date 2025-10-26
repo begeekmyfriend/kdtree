@@ -11,7 +11,9 @@ The thought of the implementation is posted [here](https://www.joinquant.com/pos
 
 ## how to debug
 
-$ cmake .
+$ mkdir build
+$ cd build
+$ cmake ..
 $ make
 $ ./kdtree 1234
 you can try different seed number for random sample generations
