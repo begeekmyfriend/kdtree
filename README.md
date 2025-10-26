@@ -15,5 +15,5 @@ $ mkdir build
 $ cd build
 $ cmake ..
 $ make
-$ ./kdtree 1234
-you can try different seed number for random sample generations
+$ ./kdtree 1234  # you can try different seed number for random sample generations
+<img width="552" height="589" alt="Image" src="https://github.com/user-attachments/assets/2e003772-e441-4923-9e3e-80c769557abd" />
